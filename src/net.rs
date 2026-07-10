@@ -11,19 +11,27 @@ use embassy_net::{
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 
-use esp_hal::{gpio::Output, rng::Rng};
+use esp_hal::{gpio::{Output,Input}, rng::Rng};
 use esp_println::{println};
-use esp_radio::wifi::{Interface, WifiController};
+use esp_radio::wifi::{self, Interface, WifiController};
+
+macro_rules!  wifi_data{
+    (FUW) => {
+        const SSID: &str = "FUW.makerspace";
+        const PASSWORD: &str = "Pi=3,14159";
+    };
+    (HOTSPOT) => {
+        const SSID: &str = "ReptilianNetworkX";
+        const PASSWORD: &str = "EarthIsFlat";
+    };
+}
 
 
-// const SSID: &str = "ReptilianNetworkX";
-// const PASSWORD: &str = "EarthIsFlat";
+wifi_data!(HOTSPOT);
 
-const SSID: &str = "FUW.makerspace";
-const PASSWORD: &str = "Pi=3,14159";
 
 //#[embassy_executor::task]
-pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spawner, shared: (Output<'static>,Output<'static>,Output<'static>, Output<'static>),hall_sensor: Output<'static>) -> (Stack<'static>, Stack<'static>)
+pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spawner, shared: (Output<'static>,Output<'static>,Output<'static>, Output<'static>),hall_sensor: Input<'static>) -> (Stack<'static>, Stack<'static>)
 {
     let access_point_config = esp_radio::wifi::ap::AccessPointConfig::default().with_ssid("radio");
     let station_config = esp_radio::wifi::sta::StationConfig::default().with_ssid(SSID).with_password(PASSWORD.into());
@@ -31,9 +39,11 @@ pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spa
     let access_point_station_config = esp_radio::wifi::Config::AccessPointStation(station_config,access_point_config);
 
     println!("Starting wifi");
-    let (wifi_controller, interfaces) =
+    let (mut wifi_controller, interfaces) =
         esp_radio::wifi::new(wifi_device, esp_radio::wifi::ControllerConfig::default().with_initial_config(access_point_station_config))
             .expect("Failed to initialize Wi-Fi controller");
+
+    let _ = esp_println::dbg!(wifi_controller.set_max_tx_power(8));
 
     println!("Wifi started");
     
