@@ -12,6 +12,7 @@ use esp_hal::clock::CpuClock;
 use esp_hal::gpio::{Output, OutputConfig};
 use esp_hal::timer::timg::TimerGroup;
 use esp_hal::gpio::Level;
+use esp_hal::gpio::{Input,InputConfig,Pull};
 
 use esp_println::{dbg};
 
@@ -62,12 +63,12 @@ async fn main(spawner: Spawner) -> ! {
     esp_rtos::start(timg0.timer0, sw_interrupt.software_interrupt0);
 
 
-    let out1 = Output::new(peripherals.GPIO3, Level::Low, OutputConfig::default());
-    let out2 = Output::new(peripherals.GPIO4, Level::Low, OutputConfig::default());
-    let out3 = Output::new(peripherals.GPIO5, Level::Low, OutputConfig::default());
-    let out4 = Output::new(peripherals.GPIO6, Level::Low, OutputConfig::default());
+    let out1 = Output::new(peripherals.GPIO7, Level::Low, OutputConfig::default());
+    let out2 = Output::new(peripherals.GPIO8, Level::Low, OutputConfig::default());
+    let out3 = Output::new(peripherals.GPIO9, Level::Low, OutputConfig::default());
+    let out4 = Output::new(peripherals.GPIO10, Level::Low, OutputConfig::default());
 
-    let hall_sensor = Output::new(peripherals.GPIO8, Level::Low, OutputConfig::default());
+    let hall_sensor = Input::new(peripherals.GPIO0, InputConfig::default().with_pull(Pull::Up));
 
  // 4. Instantiate the struct and wrap it in the Mutex
     let motor_outs =  (out1,out2,out3,out4 );
