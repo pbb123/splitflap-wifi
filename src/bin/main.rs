@@ -70,11 +70,7 @@ async fn main(spawner: Spawner) -> ! {
 
     let hall_sensor = Input::new(peripherals.GPIO0, InputConfig::default().with_pull(Pull::Up));
 
- // 4. Instantiate the struct and wrap it in the Mutex
-    let motor_outs =  (out1,out2,out3,out4 );
-
-    // 5. Initialize the StaticCell with the Mutex. 
-    // This returns a &'static Mutex that we can pass to tasks. 
+    let motor_outs =  (out1,out2,out3,out4);
 
     let (_ap_stack,_sta_stack) = wifi_test::net::init(peripherals.WIFI, spawner.clone(),motor_outs,hall_sensor).await;
     loop {Timer::after(Duration::from_millis(1000)).await}     
