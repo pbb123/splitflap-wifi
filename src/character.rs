@@ -1,10 +1,11 @@
-use embedded_stepper::{stepper,motors};
+use uln2003::StepperMotor;
+use esp_hal::gpio::Output;
 use esp_println::println;
 pub struct Character<'a>
 {
     _size: i32,
     pub position: i32,
-    pub motor: stepper::Stepper<motors::StepperMotor4<esp_hal::gpio::Output<'a>, esp_hal::gpio::Output<'a>, esp_hal::gpio::Output<'a>, esp_hal::gpio::Output<'a>>, esp_hal::delay::Delay>,
+    pub motor: uln2003::ULN2003<Output<'a>,Output<'a>,Output<'a>,Output<'a>,embassy_time::Delay>,
     char_pos: [i32;37],
     pub hall_sensor: esp_hal::gpio::Input<'a>,
 
@@ -13,7 +14,7 @@ pub struct Character<'a>
 impl Character <'_>
 {
     const STEP_NUMBER: i32 = 2048;
-    pub fn new <'a>(size: i32, motor: stepper::Stepper<motors::StepperMotor4<esp_hal::gpio::Output<'a>, esp_hal::gpio::Output<'a>, esp_hal::gpio::Output<'a>, esp_hal::gpio::Output<'a>>, esp_hal::delay::Delay>, hall_sensor: esp_hal::gpio::Input<'a>) -> Character<'a>
+    pub fn new <'a>(size: i32, motor: uln2003::ULN2003<Output<'a>,Output<'a>,Output<'a>,Output<'a>,embassy_time::Delay>, hall_sensor: esp_hal::gpio::Input<'a>) -> Character<'a>
     {
         let char_pos = (0..37).map(|i| i*size/Self::STEP_NUMBER);
         return Character
@@ -35,7 +36,7 @@ impl Character <'_>
         }
         println!("pos: {pos}");
         println!("distance: {distance}");
-        let _ = self.motor.step(distance);
+        let _ = self.motor.step_for(distance,5);
         self.position = pos;
         //let _ = self.motor.deenergise();
     }
@@ -64,12 +65,11 @@ impl Character <'_>
     }
     pub fn reset(&mut self)
     {
-        self.motor.set_speed(10);
         while self.hall_sensor.is_high()
          {
-             let _ = self.motor.step(1);
+             let _ = self.motor.step_for(1,5);
          }
-        let _ = self.motor.step(140);
+        let _ = self.motor.step_for(140,5);
         self.position =0;
     }
 }

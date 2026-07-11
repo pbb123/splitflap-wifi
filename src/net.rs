@@ -13,7 +13,7 @@ use embassy_time::{Duration, Timer};
 
 use esp_hal::{gpio::{Output,Input}, rng::Rng};
 use esp_println::{println};
-use esp_radio::wifi::{self, Interface, WifiController};
+use esp_radio::wifi::{Interface, WifiController};
 
 macro_rules!  wifi_data{
     (FUW) => {

@@ -1,5 +1,3 @@
-use core::str::FromStr;
-
 use embassy_executor::Spawner;
 use esp_println::println;
 use picoserve::{AppBuilder, make_static};
@@ -15,7 +13,7 @@ use picoserve::extract::Form;
 use serde::Deserialize;
 use heapless::String;
 
-use crate::character::{self, Character};
+use crate::character::{Character};
 use embassy_sync::mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 
@@ -34,7 +32,7 @@ pub struct CharForm
 
 async fn character_control_handler(State(state): State<&AppState<'_>>,Form(form_data) : Form<CharForm>) -> impl IntoResponse {
     let mut character_locked = state.character.lock().await;
-    character_locked.motor.set_speed(form_data.speed);
+    //character_locked.motor.set_speed(form_data.speed);
     for c in form_data.val.as_bytes()
     {
         character_locked.print_char(*c);
@@ -112,8 +110,7 @@ pub async fn web_task(
 #[embassy_executor::task]
 pub async fn setup_character_controller_server(motor_outs: (Output<'static>,Output<'static>,Output<'static>,Output<'static>), hall_sensor: Input<'static>, stack: Stack<'static>, spawner: Spawner)
 {
-    let mut motor = embedded_stepper::create_stepper_4pin(motor_outs.0, motor_outs.1, motor_outs.2, motor_outs.3, esp_hal::delay::Delay::new(), 2048);
-    motor.set_speed(20);
+    let motor = uln2003::ULN2003::new(motor_outs.0, motor_outs.1, motor_outs.2, motor_outs.3, Some(embassy_time::Delay));
     let character = crate::character::Character::new(37,motor,hall_sensor);
     let character_mutex= make_static!(Mutex<NoopRawMutex, Character<'_>>,Mutex::new(character));
     let state = make_static!(AppState<'static>, AppState { character: character_mutex, spawner: spawner });
