@@ -22,8 +22,8 @@ impl Character <'_>
             _size: size,
             position: 0,
             motor: motor,
-            char_pos:  [0, 56, 111, 167, 222, 277, 333, 388, 443, 499, 554, 609, 665, 720, 775, 831, 
-            886, 941, 997, 1052, 1108, 1163, 1218, 1274, 1329, 1384, 1440, 1495, 1550, 1606, 1661, 1716, 1772, 1827, 1882, 1938, 1993],
+            char_pos:  [0, 111, 221, 332, 443, 554, 664, 775, 886, 996, 1107, 1218, 1328, 1439, 1550, 1661, 1771, 1882, 1993, 
+            2103, 2214, 2325, 2435, 2546, 2657, 2768, 2878, 2989, 3100, 3210, 3321, 3432, 3542, 3653, 3764, 3875, 3985],
             hall_sensor
         }
     }
@@ -32,11 +32,11 @@ impl Character <'_>
         let mut distance = pos - self.position;
         if distance<0
         {
-            distance+=2048;
+            distance+=4096;
         }
         println!("pos: {pos}");
         println!("distance: {distance}");
-        let _ = self.motor.step_for(distance,5);
+        let _ = self.motor.step_for(distance,1);
         self.position = pos;
         //let _ = self.motor.deenergise();
     }
@@ -48,11 +48,11 @@ impl Character <'_>
         const ASCII_a: u8 = 97;
         const ASCII_z: u8 = 122;
         const ASCII_0: u8 = 48;
-        const ASCII_9: u8 = 48;
+        const ASCII_9: u8 = 57;
 
         const FLAP_BLANK: u8 = 0;
         const FLAP_A: u8 = 1;
-        const FLAP_0: u8 = 28;
+        const FLAP_0: u8 = 27;
         let flap_number = match char
         {
             ASCII_SPACE =>       FLAP_BLANK as usize,
@@ -66,10 +66,10 @@ impl Character <'_>
     pub fn reset(&mut self)
     {
         while self.hall_sensor.is_high()
-         {
-             let _ = self.motor.step_for(1,5);
-         }
-        let _ = self.motor.step_for(140,5);
+        {
+            let _ = self.motor.step_for(1,1);
+        }
+        let _ = self.motor.step_for(280,1);
         self.position =0;
     }
 }
