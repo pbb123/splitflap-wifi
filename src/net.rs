@@ -1,5 +1,7 @@
 use core::{net::Ipv4Addr, str::FromStr};
 use crate::mk_static;
+use edge_mdns::{buf::VecBufAccess, io::DEFAULT_SOCKET};
+use edge_nal_embassy::UdpBuffers;
 use embassy_net::{
     Ipv4Cidr,
     Runner,
@@ -9,11 +11,13 @@ use embassy_net::{
 };
 
 use embassy_executor::Spawner;
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_time::{Duration, Timer};
 
 use esp_hal::{gpio::{Output,Input}, rng::Rng};
 use esp_println::{println};
 use esp_radio::wifi::{Interface, WifiController};
+use smoltcp::socket;
 
 macro_rules!  wifi_data{
     (FUW) => {
@@ -209,4 +213,43 @@ async fn net_task(mut runner: Runner<'static, Interface<'static>>) {
     runner.run().await
 }
 
+#[embassy_executor::task]
+async fn run_mdns(
+    stack: &'static embassy_net::Stack<'static>,
+    recv_buf: VecBufAccess<NoopRawMutex,1500>,
+    send_buf: VecBufAccess<NoopRawMutex,1500>,
+    our_name: &'static str,
+    our_ip: Ipv4Addr,
+)
+{
+    use edge_nal::UdpSplit;
 
+    let udp_buf = &UdpBuffers::<1>::new();
+
+    let udp = edge_nal_embassy::Udp::new(*stack,udp_buf);
+    let mut socket = edge_mdns::io::bind(&udp, DEFAULT_SOCKET, Some(Ipv4Addr::UNSPECIFIED), Some(0)).await.expect("Mdns socket should bind");
+
+    let (recv, send) = socket.split();
+
+    let host = edge_mdns::host::Host {
+        hostname: our_name,
+        ipv4: our_ip,
+        ipv6: core::net::Ipv6Addr::UNSPECIFIED,
+        ttl: edge_mdns::domain::base::Ttl::from_secs(60),
+    };
+
+    let signal = embassy_sync::signal::Signal::<NoopRawMutex, _>::new();
+
+    let mdns = edge_mdns::io::Mdns::new(
+        Some(Ipv4Addr::UNSPECIFIED),
+        Some(0),
+        recv,
+        send,
+        recv_buf,
+        send_buf,
+        esp_hal::rng::Rng::new(),
+        &signal,
+    );
+
+     let _ = mdns.run(edge_mdns::HostAnswersMdnsHandler::new(&host)).await;
+}
