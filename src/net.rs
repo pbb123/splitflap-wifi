@@ -17,7 +17,6 @@ use embassy_time::{Duration, Timer};
 use esp_hal::{gpio::{Output,Input}, rng::Rng};
 use esp_println::{println};
 use esp_radio::wifi::{Interface, WifiController};
-use smoltcp::socket;
 
 macro_rules!  wifi_data{
     (FUW) => {
@@ -80,7 +79,7 @@ pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spa
     let (sta_stack, sta_runner) = embassy_net::new(
         sta,
         sta_ip_config,
-        mk_static!(StackResources<3>, StackResources::<3>::new()),
+        mk_static!(StackResources<4>, StackResources::<4>::new()),
         seed,
     );
 
@@ -96,13 +95,17 @@ pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spa
         .config_v4()
         .inspect(|c| println!("ipv4 config: {c:?}"));
     spawner.spawn(crate::web::setup_character_controller_server(shared,hall_sensor,sta_stack,spawner).unwrap());
-    spawner.spawn(get_sta_ip(sta_stack).unwrap());
+    let sta_ip = get_sta_ip(sta_stack).await;
+    let (recv_buf, send_buf) = (
+        VecBufAccess::<NoopRawMutex, 1500>::new(),
+        VecBufAccess::<NoopRawMutex, 1500>::new(),
+    );
+    spawner.spawn(run_mdns(sta_stack, recv_buf, send_buf, "splitflap", sta_ip).unwrap());
     return (ap_stack, sta_stack);
 }
-#[embassy_executor::task]
-async fn get_sta_ip(sta_stack: Stack<'static>)
+async fn get_sta_ip(sta_stack: Stack<'static>) -> Ipv4Addr
 {
-    let _sta_address = loop {
+    let sta_address = loop {
         if let Some(config) = sta_stack.config_v4() {
             let address = config.address.address();
             println!("Got IP: {}", address);
@@ -111,6 +114,7 @@ async fn get_sta_ip(sta_stack: Stack<'static>)
         println!("Waiting for IP...");
         Timer::after(Duration::from_millis(500)).await;
     };
+    sta_address
 }
 #[embassy_executor::task]
 async fn run_dhcp(stack: Stack<'static>, gw_ip_addr: &'static str)
@@ -215,7 +219,7 @@ async fn net_task(mut runner: Runner<'static, Interface<'static>>) {
 
 #[embassy_executor::task]
 async fn run_mdns(
-    stack: &'static embassy_net::Stack<'static>,
+    stack: embassy_net::Stack<'static>,
     recv_buf: VecBufAccess<NoopRawMutex,1500>,
     send_buf: VecBufAccess<NoopRawMutex,1500>,
     our_name: &'static str,
@@ -225,12 +229,13 @@ async fn run_mdns(
     use edge_nal::UdpSplit;
 
     let udp_buf = &UdpBuffers::<1>::new();
-
-    let udp = edge_nal_embassy::Udp::new(*stack,udp_buf);
+    println!("Udp buffer created");
+    let udp = edge_nal_embassy::Udp::new(stack,udp_buf);
+    println!("Udp object created");
     let mut socket = edge_mdns::io::bind(&udp, DEFAULT_SOCKET, Some(Ipv4Addr::UNSPECIFIED), Some(0)).await.expect("Mdns socket should bind");
-
+    println!("Udp socket created");
     let (recv, send) = socket.split();
-
+    println!("Udp socket splited");
     let host = edge_mdns::host::Host {
         hostname: our_name,
         ipv4: our_ip,
@@ -250,6 +255,6 @@ async fn run_mdns(
         esp_hal::rng::Rng::new(),
         &signal,
     );
-
+    println!("Starting mdns");
      let _ = mdns.run(edge_mdns::HostAnswersMdnsHandler::new(&host)).await;
 }
