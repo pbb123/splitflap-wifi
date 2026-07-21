@@ -1424,6 +1424,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
+name = "port-expander"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21386e008c7aae49fedaf13fa22a582a0c462f244403f680ae8f9f433f86452d"
+dependencies = [
+ "embedded-hal 1.0.0",
+]
+
+[[package]]
 name = "portable-atomic"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1998,6 +2007,7 @@ dependencies = [
  "heapless 0.8.0",
  "log",
  "picoserve",
+ "port-expander",
  "serde",
  "smoltcp",
  "static_cell",
