@@ -72,7 +72,12 @@ async fn main(spawner: Spawner) -> ! {
 
     let motor_outs =  (out1,out2,out3,out4);
 
-    let i2c =peripherals.I2C0;
+    let i2c = esp_hal::i2c::master::I2c::new(
+        peripherals.I2C0,
+        esp_hal::i2c::master::Config::default()
+        .with_sda(peripherals.GPIO2)
+        .with_scl(peripherals.GPIO3)
+    );
 
     let (_ap_stack,_sta_stack) = wifi_test::net::init(peripherals.WIFI, spawner.clone(),motor_outs,hall_sensor).await;
     loop {Timer::after(Duration::from_millis(1000)).await}     
