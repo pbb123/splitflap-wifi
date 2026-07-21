@@ -14,14 +14,14 @@ use serde::Deserialize;
 use heapless::String;
 use uln2003::StepperMotor;
 
-use crate::character::{Character};
+use crate::module::{Module};
 use embassy_sync::mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 
 use esp_hal::gpio::{Output,Input};
 
 pub struct AppState<'a> {
-    pub character: &'a Mutex<NoopRawMutex, Character<'a>>,
+    pub character: &'a Mutex<NoopRawMutex, Module<'a>>,
     pub spawner: embassy_executor::Spawner
 }
 #[derive(Deserialize)]
@@ -37,7 +37,7 @@ async fn character_control_handler(State(state): State<&AppState<'_>>,Form(form_
         character_locked.print_char(*c);
         embassy_time::Timer::after(embassy_time::Duration::from_millis(500)).await;
     }
-    //state.spawner.spawn(print_word_task(state.character,String::from_str("AAA").unwrap()).unwrap());
+    //state.spawner.spawn(print_word_task(state,form_data.val).unwrap());
     Redirect::to("/")
 }
 pub struct Application<'a>
@@ -111,21 +111,22 @@ pub async fn setup_character_controller_server(motor_outs: (Output<'static>,Outp
 {
     let mut motor = uln2003::ULN2003::new(motor_outs.0, motor_outs.1, motor_outs.2, motor_outs.3, Some(embassy_time::Delay));
     motor.set_direction(uln2003::Direction::Reverse);
-    let character = crate::character::Character::new(37,motor,hall_sensor);
-    let character_mutex= make_static!(Mutex<NoopRawMutex, Character<'_>>,Mutex::new(character));
+    let character = crate::module::Module::new(37,motor,hall_sensor);
+    let character_mutex= make_static!(Mutex<NoopRawMutex, Module<'_>>,Mutex::new(character));
     let state = make_static!(AppState<'static>, AppState { character: character_mutex, spawner: spawner });
     let app =  make_static!(WebApp,crate::web::WebApp::new(state));
+    spawner.spawn(crate::web::web_task(0, stack, app.router, app.config).unwrap());
     spawner.spawn(crate::web::web_task(0, stack, app.router, app.config).unwrap());
 }
 
 
 #[embassy_executor::task]
-pub async fn reset_task(character: &'static mut Character<'static>)
+pub async fn reset_task(character: &'static mut Module<'static>)
 {
     character.reset();
 } 
 #[embassy_executor::task]
-pub async fn print_word_task(character_mutex: &'static embassy_sync::mutex::Mutex<NoopRawMutex, Character<'static>>,word: String<10>)
+pub async fn print_word_task(character_mutex: &'static embassy_sync::mutex::Mutex<NoopRawMutex, Module<'static>>,word: String<100>)
 {
     let mut character = character_mutex.lock().await;
     for c in word.as_bytes()

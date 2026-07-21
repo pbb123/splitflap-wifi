@@ -79,7 +79,7 @@ pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spa
     let (sta_stack, sta_runner) = embassy_net::new(
         sta,
         sta_ip_config,
-        mk_static!(StackResources<4>, StackResources::<4>::new()),
+        mk_static!(StackResources<5>, StackResources::<5>::new()),
         seed,
     );
 
