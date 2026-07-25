@@ -1,24 +1,25 @@
+use embedded_hal::digital::{InputPin, OutputPin};
 use uln2003::StepperMotor;
 use esp_hal::gpio::Output;
 use esp_println::println;
 
 
-pub struct Module<'a>
+pub struct Module<O: embedded_hal::digital::OutputPin, I: embedded_hal::digital::InputPin>
 {
     _size: i32,
     pub position: i32,
-    pub motor: uln2003::ULN2003<Output<'a>,Output<'a>,Output<'a>,Output<'a>,embassy_time::Delay>,
+    pub motor: uln2003::ULN2003<O,O,O,O,embassy_time::Delay>,
     char_pos: [i32;37],
-    pub hall_sensor: esp_hal::gpio::Input<'a>,
+    pub hall_sensor: I,
 
 }
 
-impl Module <'_>
+impl<O: OutputPin,I : InputPin> Module <O,I>
 {
     const STEP_NUMBER: i32 = 4096;
     const MOTOR_DELAY_MS: u32 = 1;
 
-    pub fn new <'a>(size: i32, motor: uln2003::ULN2003<Output<'a>,Output<'a>,Output<'a>,Output<'a>,embassy_time::Delay>, hall_sensor: esp_hal::gpio::Input<'a>) -> Module<'a>
+    pub fn new <'a>(size: i32, motor: uln2003::ULN2003<O,O,O,O,embassy_time::Delay>, hall_sensor: I) -> Module<O,I>
     {
         return Module
         {
@@ -68,7 +69,7 @@ impl Module <'_>
     }
     pub fn reset(&mut self)
     {
-        while self.hall_sensor.is_high()
+        while self.hall_sensor.is_high().expect("We should be able to read the state of hall sensor")
         {
             let _ = self.motor.step_for(1,Self::MOTOR_DELAY_MS);
         }

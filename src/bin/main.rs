@@ -16,6 +16,12 @@ use esp_hal::gpio::{Input,InputConfig,Pull};
 
 use esp_println::{dbg};
 
+use core::cell::RefCell;
+use embedded_hal_bus::i2c::CriticalSectionDevice;
+
+use port_expander::{dev::{pcf8575::{self, Driver, Pcf8575}}, mode::QuasiBidirectional};
+use wifi_test::{PcfPin,PcfParts,Pcf};
+
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     dbg!(info);
@@ -63,24 +69,37 @@ async fn main(spawner: Spawner) -> ! {
     esp_rtos::start(timg0.timer0, sw_interrupt.software_interrupt0);
 
 
-    let out1 = Output::new(peripherals.GPIO7, Level::Low, OutputConfig::default());
-    let out2 = Output::new(peripherals.GPIO8, Level::Low, OutputConfig::default());
-    let out3 = Output::new(peripherals.GPIO9, Level::Low, OutputConfig::default());
-    let out4 = Output::new(peripherals.GPIO10, Level::Low, OutputConfig::default());
+    let _out1 = Output::new(peripherals.GPIO7, Level::Low, OutputConfig::default());
+    let _out2 = Output::new(peripherals.GPIO8, Level::Low, OutputConfig::default());
+    let _out3 = Output::new(peripherals.GPIO9, Level::Low, OutputConfig::default());
+    let _out4 = Output::new(peripherals.GPIO10, Level::Low, OutputConfig::default());
 
-    let hall_sensor = Input::new(peripherals.GPIO0, InputConfig::default().with_pull(Pull::Up));
 
-    let motor_outs =  (out1,out2,out3,out4);
-
-    let i2c = esp_hal::i2c::master::I2c::new(
-        peripherals.I2C0,
+    let i2c = esp_hal::i2c::master::I2c::new
+    (   peripherals.I2C0,
         esp_hal::i2c::master::Config::default()
-        .with_sda(peripherals.GPIO2)
-        .with_scl(peripherals.GPIO3)
-    );
+    ).expect("Expected to inicialise I2C")
+    .with_sda(peripherals.GPIO1).
+    with_scl(peripherals.GPIO2)
+    .into_async();
+
+    use wifi_test::mk_static;
+    use wifi_test::{I2cBus,I2cDev,Pcf};
+
+    let i2c_bus: &mut I2cBus = mk_static!(I2cBus,critical_section::Mutex::new(RefCell::new(i2c))); 
+    let i2c_dev: I2cDev = CriticalSectionDevice::new(i2c_bus);
+    let pcf: &mut Pcf = mk_static!(Pcf,pcf8575::Pcf8575::with_mutex(i2c_dev,false,false,false));
+    let pcf_pins = pcf.split();
+
+
+
+    let motor_outs =  (pcf_pins.p00,pcf_pins.p01,pcf_pins.p02,pcf_pins.p03);
+
+    //let hall_sensor = Input::new(peripherals.GPIO0, InputConfig::default().with_pull(Pull::Up));
+    let hall_sensor = pcf_pins.p04;
 
     let (_ap_stack,_sta_stack) = wifi_test::net::init(peripherals.WIFI, spawner.clone(),motor_outs,hall_sensor).await;
-    loop {Timer::after(Duration::from_millis(1000)).await}     
+    loop {Timer::after(Duration::from_millis(1000)).await}
 }
 
 

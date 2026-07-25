@@ -32,9 +32,10 @@ macro_rules!  wifi_data{
 
 wifi_data!(HOTSPOT);
 
+use crate::QBiPcfPin;
 
 //#[embassy_executor::task]
-pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spawner, shared: (Output<'static>,Output<'static>,Output<'static>, Output<'static>),hall_sensor: Input<'static>) -> (Stack<'static>, Stack<'static>)
+pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spawner, motor_outs: (QBiPcfPin<'static>,QBiPcfPin<'static>,QBiPcfPin<'static>,QBiPcfPin<'static>), hall_sensor: QBiPcfPin<'static>) -> (Stack<'static>, Stack<'static>)
 {
     let access_point_config = esp_radio::wifi::ap::AccessPointConfig::default().with_ssid("radio");
     let station_config = esp_radio::wifi::sta::StationConfig::default().with_ssid(SSID).with_password(PASSWORD.into());
@@ -94,7 +95,7 @@ pub async fn init(wifi_device: esp_hal::peripherals::WIFI<'static>, spawner: Spa
     ap_stack
         .config_v4()
         .inspect(|c| println!("ipv4 config: {c:?}"));
-    spawner.spawn(crate::web::setup_character_controller_server(shared,hall_sensor,sta_stack,spawner).unwrap());
+    spawner.spawn(crate::web::setup_character_controller_server(motor_outs,hall_sensor,sta_stack,spawner).unwrap());
     let sta_ip = get_sta_ip(sta_stack).await;
     let (recv_buf, send_buf) = (
         VecBufAccess::<NoopRawMutex, 1500>::new(),
