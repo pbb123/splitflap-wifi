@@ -14,7 +14,7 @@ use embassy_executor::Spawner;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_time::{Duration, Timer};
 
-use esp_hal::{gpio::{Output,Input}, rng::Rng};
+use esp_hal::{rng::Rng};
 use esp_println::{println};
 use esp_radio::wifi::{Interface, WifiController};
 

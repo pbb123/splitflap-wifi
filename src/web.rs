@@ -1,5 +1,4 @@
 use embassy_executor::Spawner;
-use embedded_hal::digital::OutputPin;
 use esp_println::println;
 use picoserve::{AppBuilder, make_static};
 use picoserve::routing::{self,Router};

@@ -12,15 +12,13 @@ use esp_hal::clock::CpuClock;
 use esp_hal::gpio::{Output, OutputConfig};
 use esp_hal::timer::timg::TimerGroup;
 use esp_hal::gpio::Level;
-use esp_hal::gpio::{Input,InputConfig,Pull};
 
 use esp_println::{dbg};
 
 use core::cell::RefCell;
 use embedded_hal_bus::i2c::CriticalSectionDevice;
 
-use port_expander::{dev::{pcf8575::{self, Driver, Pcf8575}}, mode::QuasiBidirectional};
-use wifi_test::{PcfPin,PcfParts,Pcf};
+use port_expander::{dev::{pcf8575::{self}}};
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
