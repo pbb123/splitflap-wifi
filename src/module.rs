@@ -1,9 +1,14 @@
 use embedded_hal::digital::{InputPin, OutputPin};
 use uln2003::StepperMotor;
-use esp_hal::gpio::Output;
 use esp_println::println;
 
-
+/// This is a single module of a display.
+/// 
+/// It has two main functionalities:
+/// 1. Receive a character and rotate it's stepper motor to print it;
+/// 2. Do a reset sequence by rotating the motor until signal from hall sensor is detected;
+/// 
+/// To create a module we need to provide it's size, 4 output and 1 input pin for stepper motor and hall sensor accordingly. These cone from the i2c data bus module. 
 pub struct Module<O: embedded_hal::digital::OutputPin, I: embedded_hal::digital::InputPin>
 {
     _size: i32,
@@ -16,9 +21,12 @@ pub struct Module<O: embedded_hal::digital::OutputPin, I: embedded_hal::digital:
 
 impl<O: OutputPin,I : InputPin> Module <O,I>
 {
+    /// For 28byj-48 stepper motor in half stepping mode.
     const STEP_NUMBER: i32 = 4096;
+    /// As fast as we can go.
     const MOTOR_DELAY_MS: u32 = 1;
 
+    /// Creates a new module using provided size, motor output and hall sensor input pins.
     pub fn new <'a>(size: i32, motor: uln2003::ULN2003<O,O,O,O,embassy_time::Delay>, hall_sensor: I) -> Module<O,I>
     {
         return Module
@@ -31,7 +39,8 @@ impl<O: OutputPin,I : InputPin> Module <O,I>
             hall_sensor
         }
     }
-    fn goto(&mut self,pos: i32)
+    /// Goes to a specific motor position.
+    async fn goto(&mut self,pos: i32)
     {
         let mut distance = pos - self.position;
         if distance<0
@@ -42,9 +51,13 @@ impl<O: OutputPin,I : InputPin> Module <O,I>
         println!("distance: {distance}");
         let _ = self.motor.step_for(distance,Self::MOTOR_DELAY_MS);
         self.position = pos;
-        //let _ = self.motor.deenergise();
     }
-    pub fn print_char(&mut self,char: u8)
+    /// Prints a character. Available characters are:
+    /// * Upper or lowercase latin letters;
+    /// * Digits;
+    /// * Blank character represented with a space.
+    /// 
+    pub async fn print_char(&mut self,char: u8)
     {
         const ASCII_SPACE: u8 = 32;
         const ASCII_A: u8 = 65;
@@ -65,9 +78,10 @@ impl<O: OutputPin,I : InputPin> Module <O,I>
             ASCII_0..=ASCII_9 => (char-ASCII_0+FLAP_0) as usize,
             _ => todo!()
         };
-        self.goto(self.char_pos[flap_number]);
+        self.goto(self.char_pos[flap_number]).await;
     }
-    pub fn reset(&mut self)
+    /// Does a reset sequence -- it rotates the motor until hall sensor signal is detected.
+    pub async fn reset(&mut self)
     {
         while self.hall_sensor.is_high().expect("We should be able to read the state of hall sensor")
         {

@@ -32,7 +32,7 @@ async fn character_control_handler(State(state): State<&AppState<'_>>,Form(form_
     let mut character_locked = state.character.lock().await;
     for c in form_data.val.as_bytes()
     {
-        character_locked.print_char(*c);
+        character_locked.print_char(*c).await;
         embassy_time::Timer::after(embassy_time::Duration::from_millis(500)).await;
     }
     //state.spawner.spawn(print_word_task(state,form_data.val).unwrap());
@@ -116,21 +116,4 @@ pub async fn setup_character_controller_server(motor_outs: (QBiPcfPin<'static>,Q
     let app =  make_static!(WebApp,crate::web::WebApp::new(state));
     spawner.spawn(crate::web::web_task(0, stack, app.router, app.config).unwrap());
     spawner.spawn(crate::web::web_task(0, stack, app.router, app.config).unwrap());
-}
-
-
-#[embassy_executor::task]
-pub async fn reset_task(character: &'static mut Module<QBiPcfPin<'static>,QBiPcfPin<'static>>)
-{
-    character.reset();
-} 
-#[embassy_executor::task]
-pub async fn print_word_task(character_mutex: &'static embassy_sync::mutex::Mutex<NoopRawMutex, Module<QBiPcfPin<'static>,QBiPcfPin<'static>>>,word: String<100>)
-{
-    let mut character = character_mutex.lock().await;
-    for c in word.as_bytes()
-    {
-        character.print_char(*c);
-        embassy_time::Timer::after(embassy_time::Duration::from_millis(500)).await;
-    }
 }

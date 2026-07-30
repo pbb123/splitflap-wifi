@@ -6,6 +6,7 @@ pub mod net;
 pub mod web;
 pub mod module;
 pub mod display;
+pub mod bus;
 
 #[macro_export]
 macro_rules! mk_static {

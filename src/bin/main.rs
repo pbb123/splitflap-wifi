@@ -77,27 +77,30 @@ async fn main(spawner: Spawner) -> ! {
     (   peripherals.I2C0,
         esp_hal::i2c::master::Config::default()
     ).expect("Expected to inicialise I2C")
-    .with_sda(peripherals.GPIO1).
-    with_scl(peripherals.GPIO2)
+    .with_sda(peripherals.GPIO6).
+    with_scl(peripherals.GPIO5)
     .into_async();
 
     use wifi_test::mk_static;
     use wifi_test::{I2cBus,I2cDev,Pcf};
 
-    let i2c_bus: &mut I2cBus = mk_static!(I2cBus,critical_section::Mutex::new(RefCell::new(i2c))); 
+    let i2c_bus: &mut I2cBus = mk_static!(I2cBus,critical_section::Mutex::new(RefCell::new(i2c)));
+
+
     let i2c_dev: I2cDev = CriticalSectionDevice::new(i2c_bus);
     let pcf: &mut Pcf = mk_static!(Pcf,pcf8575::Pcf8575::with_mutex(i2c_dev,false,false,false));
     let pcf_pins = pcf.split();
 
 
-
-    let motor_outs =  (pcf_pins.p00,pcf_pins.p01,pcf_pins.p02,pcf_pins.p03);
+    let motor_outs =  (pcf_pins.p13,pcf_pins.p14,pcf_pins.p15,pcf_pins.p16);
 
     //let hall_sensor = Input::new(peripherals.GPIO0, InputConfig::default().with_pull(Pull::Up));
     let hall_sensor = pcf_pins.p04;
 
     let (_ap_stack,_sta_stack) = wifi_test::net::init(peripherals.WIFI, spawner.clone(),motor_outs,hall_sensor).await;
+
     loop {Timer::after(Duration::from_millis(1000)).await}
+
 }
 
 
