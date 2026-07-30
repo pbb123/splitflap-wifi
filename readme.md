@@ -39,6 +39,8 @@ Po uruchomieniu moduł esp32c3 łączy się z zdefiniowaną w kodzie siecią wif
 
 Po wybraniu odpowiedniej funkcji urządzenie wykona swoje zadanie, a następnie możemy wykonać następne polecenie. Pozycja bębna jest zapamiętana pomiędzy kolejnymi poleceniami więc nie trzeba jej resetować przed każdym użyciem.
 
+![Film](splitflap_example.mov)
+
 ## Plany na przyszłość
 
 Projekt jest nadal w fazie rozwoju i mam między innymi następujące pomysły na jego rozbudowę.
