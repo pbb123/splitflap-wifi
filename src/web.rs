@@ -14,7 +14,7 @@ use serde::Deserialize;
 use heapless::String;
 use uln2003::StepperMotor;
 
-use crate::character::{Character};
+use crate::module::{Character};
 use embassy_sync::mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 
@@ -111,7 +111,7 @@ pub async fn setup_character_controller_server(motor_outs: (Output<'static>,Outp
 {
     let mut motor = uln2003::ULN2003::new(motor_outs.0, motor_outs.1, motor_outs.2, motor_outs.3, Some(embassy_time::Delay));
     motor.set_direction(uln2003::Direction::Reverse);
-    let character = crate::character::Character::new(37,motor,hall_sensor);
+    let character = crate::module::Character::new(37,motor,hall_sensor);
     let character_mutex= make_static!(Mutex<NoopRawMutex, Character<'_>>,Mutex::new(character));
     let state = make_static!(AppState<'static>, AppState { character: character_mutex, spawner: spawner });
     let app =  make_static!(WebApp,crate::web::WebApp::new(state));

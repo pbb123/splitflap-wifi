@@ -4,7 +4,7 @@
 
 pub mod net;
 pub mod web;
-pub mod character;
+pub mod module;
 #[macro_export]
 macro_rules! mk_static {
     ($t:ty,$val:expr) => {{
