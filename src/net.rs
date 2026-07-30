@@ -23,14 +23,10 @@ macro_rules!  wifi_data{
         const SSID: &str = "FUW.makerspace";
         const PASSWORD: &str = "Pi=3,14159";
     };
-    (HOTSPOT) => {
-        const SSID: &str = "ReptilianNetworkX";
-        const PASSWORD: &str = "EarthIsFlat";
-    };
 }
 
 
-wifi_data!(HOTSPOT);
+wifi_data!(FUW);
 
 
 //#[embassy_executor::task]
